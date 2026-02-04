@@ -5,7 +5,7 @@ This example demonstrates the tool calling pattern for multi-agent systems.
 A supervisor agent coordinates specialized sub-agents (calendar and email)
 that are wrapped as tools.
 """
-
+import datetime
 from langchain.tools import tool
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
@@ -46,6 +46,17 @@ def get_available_time_slots(
     """Check calendar availability for given attendees on a specific date."""
     return ["09:00", "14:00", "16:00"]
 
+@tool
+def get_todays_date() -> str:
+   """Returns todays date in ISO format: 2026-02-03"""
+   # Get today's date
+   today = datetime.date.today()
+  
+   # Format the date into an ISO string
+   iso_date = today.isoformat()
+
+
+   return [iso_date]
 
 # ============================================================================
 # Step 2: Create specialized sub-agents
@@ -55,13 +66,14 @@ model = init_chat_model("claude-haiku-4-5-20251001")  # for example
 
 calendar_agent = create_agent(
     model,
-    tools=[create_calendar_event, get_available_time_slots],
+    tools=[create_calendar_event, get_available_time_slots, get_todays_date],
     system_prompt=(
         "You are a calendar scheduling assistant. "
         "Parse natural language scheduling requests (e.g., 'next Tuesday at 2pm') "
         "into proper ISO datetime formats. "
         "Use get_available_time_slots to check availability when needed. "
         "Use create_calendar_event to schedule events. "
+        "Use get_todays_date to get the today's date when needed. "
         "Always confirm what was scheduled in your final response."
     )
 )
@@ -139,6 +151,7 @@ if __name__ == "__main__":
     user_request = (
         "Schedule a meeting with the design team next Tuesday at 2pm for 1 hour, "
         "and send them an email reminder about reviewing the new mockups."
+        " The design team members are: p1@domain.com,p2@domain.com, and p3@domain.com."
     )
 
     print("User Request:", user_request)
